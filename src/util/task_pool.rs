@@ -73,11 +73,12 @@ impl TaskPool {
 
     /// The decision `spawn` makes, taken while the caller holds `todo`.
     ///
-    /// `waiting_tasks` still counts an idle thread after `notify_one` has woken it, until it retakes `todo`
-    /// and pops a task, and every task already in `queue` will be taken by one of those threads. So `code`
-    /// can wait in the queue only while the idle threads outnumber the tasks queued before it; otherwise
-    /// it gets a new thread. Comparing with zero instead let a burst of connections queue a task that no
-    /// thread would take until another connection closed.
+    /// `waiting_tasks` still counts an idle thread after `notify_one` has woken it, until it
+    /// retakes `todo` and pops a task, and every task already in `queue` will be taken by one of
+    /// those threads. So `code` can wait in the queue only while the idle threads outnumber the
+    /// tasks queued before it; otherwise it gets a new thread. Comparing with zero instead let a
+    /// burst of connections queue a task that no thread would take until another connection
+    /// closed.
     fn spawn_locked(
         &self,
         queue: &mut VecDeque<Box<dyn FnMut() + Send>>,
@@ -158,10 +159,11 @@ mod tests {
     use std::thread;
     use std::time::Duration;
 
-    /// A burst of connection tasks, each of which keeps its thread until released (as a keep-alive connection
-    /// does), handed to the pool faster than its notified idle threads can retake `todo`. Holding `todo` across
-    /// the whole burst makes that window certain: no notified thread can take a task, or leave the idle count,
-    /// until the burst is queued. Every task must still start on its own thread while the others hold theirs.
+    /// A burst of connection tasks, each of which keeps its thread until released (as a keep-alive
+    /// connection does), handed to the pool faster than its notified idle threads can retake
+    /// `todo`. Holding `todo` across the whole burst makes that window certain: no notified thread
+    /// can take a task, or leave the idle count, until the burst is queued. Every task must still
+    /// start on its own thread while the others hold theirs.
     #[test]
     fn a_burst_handed_over_before_any_idle_thread_wakes_starts_every_task() {
         let pool = TaskPool::new();
@@ -183,7 +185,8 @@ mod tests {
                     &mut queue,
                     Box::new(move || {
                         started_tx.send(task).unwrap();
-                        // Held until the test drops the sender, like a connection the client keeps open.
+                        // Held until the test drops the sender, like a connection the client
+                        // keeps open.
                         let _ = release_rx.take().unwrap().recv();
                     }),
                 );
@@ -192,7 +195,8 @@ mod tests {
 
         let mut started = Vec::new();
         for _ in 0..burst {
-            // Each task starts at once when it has a thread; the bound only ends a run in which one never does.
+            // Each task starts at once when it has a thread; the bound only ends a run in which
+            // one never does.
             match started_rx.recv_timeout(Duration::from_secs(10)) {
                 Ok(task) => started.push(task),
                 Err(_) => break,
