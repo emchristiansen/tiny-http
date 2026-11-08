@@ -72,12 +72,18 @@ impl TaskPool {
     }
 
     /// The decision `spawn` makes, taken while the caller holds `todo`.
+    ///
+    /// `waiting_tasks` still counts an idle thread after `notify_one` has woken it, until it retakes `todo`
+    /// and pops a task, and every task already in `queue` will be taken by one of those threads. So `code`
+    /// can wait in the queue only while the idle threads outnumber the tasks queued before it; otherwise
+    /// it gets a new thread. Comparing with zero instead let a burst of connections queue a task that no
+    /// thread would take until another connection closed.
     fn spawn_locked(
         &self,
         queue: &mut VecDeque<Box<dyn FnMut() + Send>>,
         code: Box<dyn FnMut() + Send>,
     ) {
-        if self.sharing.waiting_tasks.load(Ordering::Acquire) == 0 {
+        if queue.len() >= self.sharing.waiting_tasks.load(Ordering::Acquire) {
             self.add_thread(Some(code));
         } else {
             queue.push_back(code);
