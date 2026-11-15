@@ -13,10 +13,10 @@ jobs:
           - ssl-native-tls
     steps:
       - uses: actions/checkout@v2
-      - name: Install stable toolchain
+      - name: Install pinned toolchain
         uses: actions-rs/toolchain@v1
         with:
-          toolchain: stable
+          toolchain: 1.100.0
           components: rustfmt, clippy
 
       - name: Clippy
@@ -37,7 +37,7 @@ jobs:
     strategy:
       matrix:
         rust:
-          - stable
+          - 1.100.0
           - nightly
           - 1.57
         features:
@@ -53,14 +53,9 @@ jobs:
           toolchain: ${{ matrix.rust }}
           override: true
 
+      # Explicit selection keeps the MSRV and nightly lanes independent of the root pin.
       - name: Build
-        uses: actions-rs/cargo@v1
-        with:
-          command: build
-          args: --features ${{ matrix.features }}
+        run: cargo +${{ matrix.rust }} build --features ${{ matrix.features }}
 
       - name: Test
-        uses: actions-rs/cargo@v1
-        with:
-          command: test
-          args: --features ${{ matrix.features }}
+        run: cargo +${{ matrix.rust }} test --features ${{ matrix.features }}
